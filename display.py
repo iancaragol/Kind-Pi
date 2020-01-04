@@ -2,7 +2,7 @@ from controllers.bus import Bus
 
 class Display:
     def __init__(self):
-        self.bus_controller = Bus()
+        self.bus_controller = Bus([])
 
     def serve_dab(self):
         return 'dab.jpg'
