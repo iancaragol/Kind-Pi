@@ -18,10 +18,12 @@ class Display:
         now = dt.now()
         current_time = now.strftime("%H:%M")
         draw.text((5, 5), current_time, (0),font=font)
-        img.save("dab-gray-crushed-edit.png")
+        img.convert('L')
+        img.save("out.png")
 
-        img = Image.open('dab-gray-crushed-edit.png').convert('LA')
-        img.save('out.png')
+        optimage._pngcrush("out.png", "out_crush.png")
+
+        
 
 def main():
     d = Display()
