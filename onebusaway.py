@@ -23,7 +23,7 @@ class BusHandler:
         return data, num_of_buses
 
     def parse_json(self, input_data, counter):
-        time_type = input_data[counter]['predicted']
+        time_type = str(input_data[counter]['predicted'])
 
         if time_type == 'False':
             time_type = False
