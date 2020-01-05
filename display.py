@@ -2,6 +2,7 @@ from datetime import datetime as dt
 import time
 import optimage
 import requests
+import os
 
 from controllers.bus import Bus
 from PIL import Image, ImageFont, ImageDraw
@@ -20,8 +21,14 @@ class Display:
         draw.text((5, 5), current_time, (0),font=font)
         img.convert('L')
         img.save("out.png")
-
-        optimage._pngcrush("out.png", "out_crush.png")
+        print("Saved image")
+        os.remove("out_crush.png")
+        print("Deleted old out_crush.png")
+        f = os.popen("sudo pngcrush out.png out_crush.png")
+        x = f.read()
+        print(x)
+        #optimage._pngcrush("out.png", "out_crush.png")
+        print("Crushed image")	
 
         
 
@@ -29,8 +36,8 @@ def main():
     d = Display()
 
     while(True):
-        time.sleep(60.0)
         d.add_time()
+        time.sleep(60.0)
 
 
 if __name__ == "__main__":
