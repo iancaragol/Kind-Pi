@@ -14,13 +14,13 @@ def show_index():
     image_filename = dh.serve_dab()
     return render_template("output_image.html", default_image = image_filename)
 
-# @app.route('/bus')
-# def show_index():
-#     image_filename = dh.serve_bus()
-#     return render_template("output_image.html", default_image = image_filename)
+@app.route('/bus')
+def show_index():
+    image_filename = dh.serve_bus()
+    return render_template("output_image.html", default_image = image_filename)
 
 def main():
-    app.run(host='0.0.0.0')
+    app.run()
 
 if __name__ == "__main__":
     main()
