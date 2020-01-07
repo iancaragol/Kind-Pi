@@ -1,6 +1,5 @@
 from datetime import datetime as dt
 import time
-import optimage
 import requests
 import os
 
@@ -22,8 +21,10 @@ class Display:
         img.convert('L')
         img.save("out.png")
         print("Saved image")
-        os.remove("out_crush.png")
-        print("Deleted old out_crush.png")
+
+        # os.remove("out_crush.png")
+        # print("Deleted old out_crush.png")
+
         f = os.popen("sudo pngcrush out.png out_crush.png")
         x = f.read()
         print(x)
@@ -34,10 +35,12 @@ class Display:
 
 def main():
     d = Display()
+    # d.add_time()
 
     while(True):
         d.add_time()
-        time.sleep(60.0)
+        print("Sleeping for 59 seconds...")
+        time.sleep(59.0)
 
 
 if __name__ == "__main__":
