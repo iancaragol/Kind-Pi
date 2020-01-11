@@ -14,7 +14,11 @@ class BusHandler:
         self.bus_dict = {}
 
     def http_call(self):
-        url = 'http://api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/1_18270.json?key=TEST'
+
+        with open('credentials.txt', 'r') as f:
+            apikey = f.readline().strip()
+
+        url = 'http://api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/1_18270.json?key=' + apikey
         response = requests.get(url)
         data = response.json()
         num_of_buses = len(data['data']['entry']['arrivalsAndDepartures'])
@@ -53,7 +57,7 @@ class BusHandler:
             temp_bus = Bus(i, time_type, arrival)
             self.bus_dict[i] = temp_bus
 
-            #print('OneBusAway - Predicted:', self.bus_dict[i].predicted, '| Arrival:', str(self.bus_dict[i].arrival) + ' minutes')
+            print('OneBusAway - Predicted:', self.bus_dict[i].predicted, '| Arrival:', str(self.bus_dict[i].arrival) + ' minutes')
 
             return self.bus_dict
         
