@@ -14,7 +14,11 @@ class BusHandler:
         self.bus_dict = {}
 
     def http_call(self):
-        url = 'http://api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/1_18270.json?key=TEST'
+
+        with open('credentials.txt', 'r') as f:
+            apikey = f.readline().strip()
+
+        url = 'http://api.pugetsound.onebusaway.org/api/where/arrivals-and-departures-for-stop/1_18270.json?key=' + apikey
         response = requests.get(url)
         data = response.json()
         num_of_buses = len(data['data']['entry']['arrivalsAndDepartures'])

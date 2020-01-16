@@ -7,6 +7,8 @@ from PIL import Image, ImageFont, ImageDraw
 from controllers.uta_bus import UtaBusController, UtaBusStop
 from controllers.reddit import RedditImageController
 
+# python3 -m pyftpdlib -w
+
 class Display:
     def __init__(self, verbose, bus_handler, image_handler):
         self.verbose = verbose
@@ -17,6 +19,11 @@ class Display:
         now = dt.now()
         current_time = now.strftime("%H:%M")
         draw.text((5, 5), current_time, (0),font=font)
+        
+        date_str = now.strftime("%a, %b %d")
+
+        date_font = ImageFont.truetype("Courier_New_Bold.ttf", 42)
+        draw.text((10, 80), date_str, (0), font=date_font)
 
         if self.verbose:
             print("Time added: {}".format(current_time))
@@ -32,18 +39,22 @@ class Display:
                 else:
                     draw_txt += str(stops[i].arrival_times[j])
 
-            draw.text((10, 610+(50*i)), draw_txt, (0),font=font)
+            draw.text((10, 590+(50*i)), draw_txt, (0),font=font)
 
     def add_pixel_art(self, img):
         self.image_handler.get_image()
         pixel = Image.open('images/pixel_art.png')
-        img.paste(pixel, (50, 100))
+        w, h = pixel.size
+        w_offset = (600 - w) // 2
+        img.paste(pixel, (w_offset, 145))
+
+
 
     def update_image(self):
-        img = Image.open("images/base_image.png")
+        img = Image.open("images/kindle_display_base.png")
         draw = ImageDraw.Draw(img)
-        time_font = ImageFont.truetype("arial.ttf", 72)
-        bus_font = ImageFont.truetype("arial.ttf", 52)
+        time_font = ImageFont.truetype("Courier_New_Bold.ttf", 82)
+        bus_font = ImageFont.truetype("Courier_New_Bold.ttf", 52)
         
         # Add to image here
         if self.verbose:
