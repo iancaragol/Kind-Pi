@@ -3,14 +3,15 @@ import requests
 import os
 
 from datetime import datetime as dt
-from controllers.bus import Bus
 from PIL import Image, ImageFont, ImageDraw
-from uta_bus import UtaBusHandler, UtaBusStop
+from controllers.uta_bus import UtaBusController, UtaBusStop
+from controllers.reddit import RedditImageController
 
 class Display:
-    def __init__(self, verbose, bus_handler):
+    def __init__(self, verbose, bus_handler, image_handler):
         self.verbose = verbose
         self.bus_handler = bus_handler
+        self.image_handler = image_handler
 
     def add_time(self, draw, font):
         now = dt.now()
@@ -21,56 +22,76 @@ class Display:
             print("Time added: {}".format(current_time))
 
     def add_bus_time(self, draw, font):
-        stops = self.bus_handler.get_all_estimated_times()
+        stops = self.bus_handler.get_all_times()
         
         for i in range(len(stops)):
             draw_txt = str(stops[i].name) + " : "
-            for j in range(len(stops[i].estimated_times)):
-                if j != len(stops[i].estimated_times) - 1:
-                    draw_txt += str(stops[i].estimated_times[j]) + ", "
+            for j in range(len(stops[i].arrival_times)):
+                if j != len(stops[i].arrival_times) - 1:
+                    draw_txt += str(stops[i].arrival_times[j]) + ", "
                 else:
-                    draw_txt += str(stops[i].estimated_times[j])
+                    draw_txt += str(stops[i].arrival_times[j])
 
             draw.text((10, 610+(50*i)), draw_txt, (0),font=font)
 
-  
+    def add_pixel_art(self, img):
+        self.image_handler.get_image()
+        pixel = Image.open('images/pixel_art.png')
+        img.paste(pixel, (50, 100))
+
     def update_image(self):
         img = Image.open("images/base_image.png")
         draw = ImageDraw.Draw(img)
         time_font = ImageFont.truetype("arial.ttf", 72)
         bus_font = ImageFont.truetype("arial.ttf", 52)
         
-
         # Add to image here
+        if self.verbose:
+            print("Adding date time")
         self.add_time(draw, time_font)
+
+        if self.verbose:
+            print("Adding bus times")
         self.add_bus_time(draw, bus_font)
+        
+        if self.verbose:
+            print("Adding pixel art")
+        self.add_pixel_art(img)
 
         img.convert('L')
         img.save("images/out_pre.png")
         if self.verbose:
-            print("Saved image")
+            print("Saved pre-crush image")
 
         time.sleep(5.0)
 
         cwd = os.getcwd()
         f = os.popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
         x = f.read()
-        
+
         if self.verbose:
+            print("Crushed image")
             print(x)
+
 
         
 
 def main():
+    ubc = UtaBusController()
+    ric = RedditImageController()
+
     # Add our bus stops
-    ubh = UtaBusHandler()
-    ubs2 = UtaBusStop(198494, "2", "Go to engineering building", 120, "false", "2")
-    ubs4 = UtaBusStop(126004, "4/455", "Go to library", 120, "false", "")
+    ubs2 = UtaBusStop(198494, "2", "Go to engineering building", 60, "false", "2")
+    ubs2.update_scheduled_stop_times(2003, 198494, 24493) # Route id, stop id, stop code
+    ubs4 = UtaBusStop(126004, "4", "Go to library", 60, "false", "4")
+    ubs4.update_scheduled_stop_times(79372, 126004, 18260)
+    ubs455 = UtaBusStop(126004, "455", "Go to library", 60, "false", "455")
+    ubs455.update_scheduled_stop_times(19906, 126004, 18260)
+    ubc.add_bus_stop(ubs2)
+    ubc.add_bus_stop(ubs4)
+    ubc.add_bus_stop(ubs455)
 
-    ubh.add_bus_stop(ubs2)
-    ubh.add_bus_stop(ubs4)
-
-    d = Display(True, ubh)
+    d = Display(True, ubc, ric)
 
     while(True):
         d.update_image()
