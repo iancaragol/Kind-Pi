@@ -106,8 +106,8 @@ def main():
 
     while(True):
         d.update_image()
-        print("Sleeping for 53 seconds...")
-        time.sleep(53.0)
+        print("Sleeping for 30 seconds...")
+        time.sleep(30.0)
 
 
 if __name__ == "__main__":
