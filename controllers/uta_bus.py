@@ -123,7 +123,7 @@ class UtaBusController:
         stops = []
         for bs in self.bus_stops.values():
             # Estimated times
-            temp_bs = self.update_estimated_times(bs)
+            # temp_bs = self.update_estimated_times(bs)
             temp_bs = self.update_scheduled_times(bs)
 
             temp_est_times = temp_bs.estimated_times
