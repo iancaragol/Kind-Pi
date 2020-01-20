@@ -72,10 +72,14 @@ class UtaBusController:
         return estimated_times
 
     def update_estimated_times(self, bus_stop):
-        content = self.make_request(bus_stop)
-        times = self.parse_response_content(content)
+        try: #UTA API is iconsistent
+            content = self.make_request(bus_stop)
+            times = self.parse_response_content(content)
+            bus_stop.estimated_times = times
 
-        bus_stop.estimated_times = times
+
+        except:
+            bus_stop.estimated_times = []
 
         print("Stop: " + str(bus_stop.stop_id) + " , times: " + str(times))
 
