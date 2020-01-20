@@ -56,25 +56,23 @@ class Display:
         time_font = ImageFont.truetype("Courier_New_Bold.ttf", 82)
         bus_font = ImageFont.truetype("Courier_New_Bold.ttf", 52)
         
+        if self.verbose:
+            print("Adding pixel art")
+        self.add_pixel_art(img)
+
+        if self.verbose:
+            print("Adding bus times")
+        self.add_bus_time(draw, bus_font)
+
         # Add to image here
         if self.verbose:
             print("Adding date time")
         self.add_time(draw, time_font)
 
-        if self.verbose:
-            print("Adding bus times")
-        self.add_bus_time(draw, bus_font)
-        
-        if self.verbose:
-            print("Adding pixel art")
-        self.add_pixel_art(img)
-
         img.convert('L')
         img.save("images/out_pre.png")
         if self.verbose:
             print("Saved pre-crush image")
-
-        time.sleep(5.0)
 
         cwd = os.getcwd()
         f = os.popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
@@ -105,9 +103,9 @@ def main():
     d = Display(True, ubc, ric)
 
     while(True):
+        print("Updating image!")
         d.update_image()
-        print("Sleeping for 30 seconds...")
-        time.sleep(30.0)
+        print("Image updated!")
 
 
 if __name__ == "__main__":
