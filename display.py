@@ -1,19 +1,35 @@
 import time
 import requests
 import os
+import paramiko
+
 
 from datetime import datetime as dt
 from PIL import Image, ImageFont, ImageDraw
 from controllers.uta_bus import UtaBusController, UtaBusStop
 from controllers.reddit import RedditImageController
+from paramiko import SSHClient
+from scp import SCPClient
 
 # python3 -m pyftpdlib -w
+
+kindle_addr = "10.0.0.238"
+kindle_pw = "fionac28"
 
 class Display:
     def __init__(self, verbose, bus_handler, image_handler):
         self.verbose = verbose
         self.bus_handler = bus_handler
         self.image_handler = image_handler
+        self.ssh_client = SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        #self.ssh_client.load_host_keys()
+        self.ssh_client.connect(hostname=kindle_addr,
+                                port=22,
+                                username="root",
+                                password=kindle_pw)
+        self.scp_client = SCPClient(self.ssh_client.get_transport())
+
 
     def add_time(self, draw, font):
         now = dt.now()
@@ -81,9 +97,12 @@ class Display:
         if self.verbose:
             print("Crushed image")
             print(x)
+        print("Delivering image to kindle...")
+        self.deliver_image("/images/out.png")
+        print("Image delivered!")
 
-
-        
+    def deliver_image(self, filepath):
+        self.scp_client.put(os.getcwd() + filepath, '/usr')
 
 def main():
     ubc = UtaBusController()
