@@ -9,7 +9,7 @@ class RedditImageController:
 
         subreddit = reddit.subreddit('illustration')  
 
-        top_posts = subreddit.top('day')     
+        top_posts = subreddit.top('hour')     
         for submission in top_posts:
             if not submission.stickied:
                 if 'http://i.imgur.com/' in submission.url or 'i.redd.it/' in submission.url:

@@ -2,33 +2,36 @@ import time
 import requests
 import os
 import paramiko
+import sys
+import argparse
 
 
 from datetime import datetime as dt
 from PIL import Image, ImageFont, ImageDraw
 from controllers.uta_bus import UtaBusController, UtaBusStop
 from controllers.reddit import RedditImageController
+from controllers.attack import AttackHandler
 from paramiko import SSHClient
 from scp import SCPClient
 
-# python3 -m pyftpdlib -w
-
-kindle_addr = "10.0.0.238"
-kindle_pw = "fionac28"
-
 class Display:
-    def __init__(self, verbose, bus_handler, image_handler):
+    def __init__(self, verbose, kindle_addr, kindle_pw, bus_handler, image_handler, attack_handler, draw_image, draw_bus, draw_attacks):
         self.verbose = verbose
         self.bus_handler = bus_handler
         self.image_handler = image_handler
+        self.attack_handler = attack_handler
+
         self.ssh_client = SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #self.ssh_client.load_host_keys()
         self.ssh_client.connect(hostname=kindle_addr,
                                 port=22,
                                 username="root",
                                 password=kindle_pw)
         self.scp_client = SCPClient(self.ssh_client.get_transport())
+
+        self.draw_image = draw_image
+        self.draw_bus = draw_bus
+        self.draw_attacks = draw_attacks
 
 
     def add_time(self, draw, font):
@@ -57,6 +60,45 @@ class Display:
 
             draw.text((10, 590+(50*i)), draw_txt, (0),font=font)
 
+    def add_attacks(self, draw, font):
+        attacks = self.attack_handler.get_data()
+        geo_loc = self.attack_handler.get_geo_loc(attacks['last_ip'])
+        net_stats = self.attack_handler.get_net_stats()
+
+        draw_txt = attacks['last_ip']
+
+        if geo_loc != None:
+            if geo_loc['city'] != None:
+                draw_txt += f": {geo_loc['city']}"
+            if geo_loc['country_code'] != None:
+                if len(geo_loc['country_name']) > 12:
+                    draw_txt += f", {geo_loc['country_code']}"
+                else:
+                    draw_txt += f", {geo_loc['country_name']}"
+
+        loc_font = ImageFont.truetype("Courier_New_Bold.ttf", 24)
+        draw.text((10, 580), draw_txt, (0), font=loc_font)
+
+        sorted_users = sorted(attacks['users'].items(), key=lambda x:x[1], reverse=True)
+        user_font = ImageFont.truetype("Courier_New_Bold.ttf", 24)
+        
+        for i in range(0, len(sorted_users)):
+            if i > 6:
+                break
+            draw_txt = f"{sorted_users[i][0]}: {sorted_users[i][1]}"
+            draw.text((10, 610+(30*i)), draw_txt, (0), font=user_font)
+        
+        # Draw network stats
+        draw_txt = "rx_d: " + net_stats['rx_d']
+        draw.text((310, 610+(30*0)), draw_txt, (0), font=user_font)
+        draw_txt = "tx_d: " + net_stats['tx_d']
+        draw.text((310, 610+(30*1)), draw_txt, (0), font=user_font)
+        # Leave a space
+        draw_txt = "rx_m: " + net_stats['rx_m']
+        draw.text((310, 610+(30*3)), draw_txt, (0), font=user_font)
+        draw_txt = "tx_m: " + net_stats['tx_m']
+        draw.text((310, 610+(30*4)), draw_txt, (0), font=user_font)
+
     def add_pixel_art(self, img):
         self.image_handler.get_image()
         pixel = Image.open('images/pixel_art.png')
@@ -71,14 +113,23 @@ class Display:
         draw = ImageDraw.Draw(img)
         time_font = ImageFont.truetype("Courier_New_Bold.ttf", 82)
         bus_font = ImageFont.truetype("Courier_New_Bold.ttf", 52)
-        
-        if self.verbose:
-            print("Adding pixel art")
-        self.add_pixel_art(img)
+        attack_font = ImageFont.truetype("Courier_New_Bold.ttf", 32)
 
-        if self.verbose:
-            print("Adding bus times")
-        self.add_bus_time(draw, bus_font)
+        
+        if self.draw_image:
+            if self.verbose:
+                print("Adding pixel art")
+            self.add_pixel_art(img)
+
+        if self.draw_bus:
+            if self.verbose:
+                print("Adding bus times")
+            self.add_bus_time(draw, bus_font)
+
+        if self.draw_attacks:
+            if self.verbose:
+                print("Adding attack info")
+            self.add_attacks(draw, attack_font)
 
         # Add to image here
         if self.verbose:
@@ -105,21 +156,21 @@ class Display:
         self.scp_client.put(os.getcwd() + filepath, '/usr')
 
 def main():
-    ubc = UtaBusController()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ip', required=True) # IP of VM
+    parser.add_argument('--port', required=True) # Port of flask app
+    parser.add_argument('--kip', required=True) # Kindle IP
+    parser.add_argument('--pw', required=True) # Kindle root PW
+
+    args = parser.parse_args()
+
     ric = RedditImageController()
+    ath = AttackHandler("http://" + args.ip + ":" + args.port)
 
-    # Add our bus stops
-    ubs2 = UtaBusStop(198494, "2", "Go to engineering building", 60, "false", "2")
-    ubs2.update_scheduled_stop_times(2003, 198494, 24493) # Route id, stop id, stop code
-    ubs4 = UtaBusStop(126004, "4", "Go to library", 60, "false", "4")
-    ubs4.update_scheduled_stop_times(79372, 126004, 18260)
-    ubs455 = UtaBusStop(126004, "455", "Go to library", 60, "false", "455")
-    ubs455.update_scheduled_stop_times(19906, 126004, 18260)
-    ubc.add_bus_stop(ubs2)
-    ubc.add_bus_stop(ubs4)
-    ubc.add_bus_stop(ubs455)
+    kindle_addr = args.kip
+    kindle_pw = args.pw
 
-    d = Display(True, ubc, ric)
+    d = Display(kindle_addr, kindle_pw, True, None, ric, ath, True, None, True)
 
     while(True):
         print("Updating image!")
