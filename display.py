@@ -170,7 +170,7 @@ def main():
     kindle_addr = args.kip
     kindle_pw = args.pw
 
-    d = Display(kindle_addr, kindle_pw, True, None, ric, ath, True, None, True)
+    d = Display(True, kindle_addr, kindle_pw, None, ric, ath, True, None, True)
 
     while(True):
         print("Updating image!")
