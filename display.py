@@ -21,17 +21,28 @@ class Display:
         self.image_handler = image_handler
         self.attack_handler = attack_handler
 
-        self.ssh_client = SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh_client.connect(hostname=kindle_addr,
-                                port=22,
-                                username="root",
-                                password=kindle_pw)
-        self.scp_client = SCPClient(self.ssh_client.get_transport())
+        self.kindle_addr = kindle_addr
+        self.kindle_pw = kindle_pw
+
+        self.ssh_client = None
+        self.scp_client = None
+        self.ssh_connect() # Connect to kindle
 
         self.draw_image = draw_image
         self.draw_bus = draw_bus
         self.draw_attacks = draw_attacks
+
+
+    def ssh_connect(self,):
+        print("Opening ssh connection...")
+        self.ssh_client = SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh_client.connect(hostname=self.kindle_addr,
+                                port=22,
+                                username="root",
+                                password=self.kindle_pw)
+        self.scp_client = SCPClient(self.ssh_client.get_transport())
+        print("Succeeded!")
 
 
     def add_time(self, draw, font):
@@ -81,12 +92,14 @@ class Display:
 
         sorted_users = sorted(attacks['users'].items(), key=lambda x:x[1], reverse=True)
         user_font = ImageFont.truetype("Courier_New_Bold.ttf", 24)
-        
+        draw_txt = f"{attacks['last_user']}*"
+        draw.text((10, 610), draw_txt, (0), font=user_font)
+
         for i in range(0, len(sorted_users)):
             if i > 6:
                 break
             draw_txt = f"{sorted_users[i][0]}: {sorted_users[i][1]}"
-            draw.text((10, 610+(30*i)), draw_txt, (0), font=user_font)
+            draw.text((10, 640+(30*i)), draw_txt, (0), font=user_font)
         
         # Draw network stats
         draw_txt = "rx_d: " + net_stats['rx_d']
@@ -106,15 +119,12 @@ class Display:
         w_offset = (600 - w) // 2
         img.paste(pixel, (w_offset, 145))
 
-
-
     def update_image(self):
         img = Image.open("images/kindle_display_base.png")
         draw = ImageDraw.Draw(img)
         time_font = ImageFont.truetype("Courier_New_Bold.ttf", 82)
         bus_font = ImageFont.truetype("Courier_New_Bold.ttf", 52)
         attack_font = ImageFont.truetype("Courier_New_Bold.ttf", 32)
-
         
         if self.draw_image:
             if self.verbose:
@@ -158,6 +168,9 @@ class Display:
         except Exception as e:
             print("An error occured while delivering the image. This image will be skipped.")
             print(e)
+            if(type(e) is paramiko.SSHException):
+                print("Exception was an ssh exception. Reopening ssh connection!")
+                self.ssh_connect()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -180,6 +193,10 @@ def main():
         print("Updating image!")
         d.update_image()
         print("Image updated!")
+
+        if(not d.draw_bus): # If we done have to draw the bus then there is some extra time between image updates
+            print("Sleeping for 10 seconds...")
+            time.sleep(10)
 
 
 if __name__ == "__main__":

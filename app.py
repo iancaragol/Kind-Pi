@@ -33,6 +33,7 @@ except Exception as e:
     ip_users = {}
 
 last_ip = "0.0.0.0.0"
+last_user = ""
 filename = '/var/log/auth.log'
 
 rx_d = ""
@@ -46,8 +47,9 @@ def get_attacks():
     global user_count
     global ip_users
     global last_ip
+    global last_user
 
-    j = {'users':user_count, 'ips':ip_users, 'last_ip':last_ip}
+    j = {'users':user_count, 'ips':ip_users, 'last_ip':last_ip, 'last_user':last_user}
     return jsonify(j)
 
 @app.route('/traffic', methods=['GET'])
@@ -151,7 +153,9 @@ def update_logs():
                         ip_users[ip].append(user)
                     
                     global last_ip
+                    global last_user
                     last_ip = ip
+                    last_user = user
 
             except Exception as e:
                 print(e)
@@ -167,7 +171,10 @@ def update_logs():
 if __name__ == "__main__":
     port = sys.argv[1]
 
-    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=port)
+    if len(sys.argv > 2):
+        net_interface = sys.argv[2]
+
+    app.run(debug=True, use_reloader=False, host="0.0.0.0", port=54663)
 
     
 
