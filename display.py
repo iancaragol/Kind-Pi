@@ -153,7 +153,11 @@ class Display:
         print("Image delivered!")
 
     def deliver_image(self, filepath):
-        self.scp_client.put(os.getcwd() + filepath, '/usr')
+        try:
+            self.scp_client.put(os.getcwd() + filepath, '/usr')
+        except Exception as e:
+            print("An error occured while delivering the image. This image will be skipped.")
+            print(e)
 
 def main():
     parser = argparse.ArgumentParser()
