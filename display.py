@@ -195,8 +195,8 @@ def main():
         print("Image updated!")
 
         if(not d.draw_bus): # If we done have to draw the bus then there is some extra time between image updates
-            print("Sleeping for 10 seconds...")
-            time.sleep(10)
+            print("Sleeping for 3 seconds...")
+            time.sleep(3)
 
 
 if __name__ == "__main__":

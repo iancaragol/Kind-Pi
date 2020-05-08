@@ -4,6 +4,10 @@ import os
 from PIL import Image
 
 class RedditImageController:
+    def __init__(self):
+        self.last_image_url = ""
+        self.image_changed = True
+
     def get_image(self):
         reddit = praw.Reddit('Kindle', user_agent='kindle user')
 
@@ -17,6 +21,11 @@ class RedditImageController:
                     break
 
     def download_image(self, image_url, filename):
+        if image_url == self.last_image_url:
+            self.image_changed = False
+            print("Skipping download because image has not changed...")
+            return
+
         response = requests.get(image_url)
 
         if response.status_code == 200:
@@ -31,8 +40,10 @@ class RedditImageController:
         
         elif filename.endswith('.jpg'):
             filename = self.jpg_to_png(filename)
-
+            
         self.crop_image_and_save(filename)
+        self.last_image_url = image_url
+        self.image_changed = True
 
     def crop_image_and_save(self, filename):
         basewidth = 550
