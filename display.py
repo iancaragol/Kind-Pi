@@ -72,9 +72,22 @@ class Display:
             draw.text((10, 590+(50*i)), draw_txt, (0),font=font)
 
     def add_attacks(self, draw, font):
-        attacks = self.attack_handler.get_data()
-        geo_loc = self.attack_handler.get_geo_loc(attacks['last_ip'])
-        net_stats = self.attack_handler.get_net_stats()
+        try:
+            attacks = self.attack_handler.get_data()
+            geo_loc = self.attack_handler.get_geo_loc(attacks['last_ip'])
+            net_stats = self.attack_handler.get_net_stats()
+        except Exception as e:
+            # Dirty error handling ;p
+            print("An error occurred while getting network and attack data.")
+            print(e)
+
+            template = "Exception: {0}"
+            message = template.format(type(e).__name__)
+
+            error_font = ImageFont.truetype("Courier_New_Bold.ttf", 24)
+            draw.text((10, 580), message, (0), font=error_font)
+            return
+            
 
         draw_txt = attacks['last_ip']
 
