@@ -9,16 +9,20 @@ class RedditImageController:
         self.image_changed = True
 
     def get_image(self):
-        reddit = praw.Reddit('Kindle', user_agent='kindle user')
+        try:
+            print("Getting images from /r/ullustration")
+            reddit = praw.Reddit('Kindle', user_agent='kindle user')
+            subreddit = reddit.subreddit('illustration')  
 
-        subreddit = reddit.subreddit('illustration')  
-
-        top_posts = subreddit.top('hour')     
-        for submission in top_posts:
-            if not submission.stickied:
-                if 'http://i.imgur.com/' in submission.url or 'i.redd.it/' in submission.url:
-                    self.download_image(submission.url, 'images/' + str(submission.url).rsplit('/', 1)[1])
-                    break
+            top_posts = subreddit.top('hour')     
+            for submission in top_posts:
+                if not submission.stickied:
+                    if 'http://i.imgur.com/' in submission.url or 'i.redd.it/' in submission.url:
+                        self.download_image(submission.url, 'images/' + str(submission.url).rsplit('/', 1)[1])
+                        break
+        except Exception as e:
+            print("An exception occurred while getting images...")
+            print(e)
 
     def download_image(self, image_url, filename):
         if image_url == self.last_image_url:
@@ -26,24 +30,30 @@ class RedditImageController:
             print("Skipping download because image has not changed...")
             return
 
-        response = requests.get(image_url)
+        try:
+            print("Downloading image from reddit...")
+            response = requests.get(image_url)
 
-        if response.status_code == 200:
-            print('Downloading %s...' % (filename))
+            if response.status_code == 200:
+                print('Downloading %s...' % (filename))
 
-        with open(filename, 'wb') as fo:
-            for chunk in response.iter_content(4096):
-                fo.write(chunk)
-        
-        if filename.endswith('.gif'):
-            filename = self.gif_to_png(filename)
-        
-        elif filename.endswith('.jpg'):
-            filename = self.jpg_to_png(filename)
+            with open(filename, 'wb') as fo:
+                for chunk in response.iter_content(4096):
+                    fo.write(chunk)
             
-        self.crop_image_and_save(filename)
-        self.last_image_url = image_url
-        self.image_changed = True
+            if filename.endswith('.gif'):
+                filename = self.gif_to_png(filename)
+            
+            elif filename.endswith('.jpg'):
+                filename = self.jpg_to_png(filename)
+                
+            self.crop_image_and_save(filename)
+            self.last_image_url = image_url
+            self.image_changed = True
+            
+        except Exception as e:
+            print("An exception occurred while downloading...")
+            print(e)
 
     def crop_image_and_save(self, filename):
         basewidth = 550
