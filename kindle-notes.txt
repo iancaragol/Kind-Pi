@@ -1,13 +1,13 @@
 Scripts are stored in /usr
 
-After restarting kindle it may be neccessaru to make the file system writable using this command:
+After restarting kindle it may be neccessary to make the file system writable using this command:
 mount -o rw,remount /
 
 Steps for starting kindle scripts:
 
-1. ssh into kindle
+1. ssh into kindle (user: root)
 2. navigate to /usr
 3. mount -o rw,remount /
 4. tmux
-5. ./start-display.ssh
+5. ./start-display.sh
 6. Ctrl+b, d to detach

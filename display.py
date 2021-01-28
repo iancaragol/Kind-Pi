@@ -1,21 +1,17 @@
-import time
-import requests
-import os
-import paramiko
-import sys
-import argparse
-
-
 from datetime import datetime as dt
 from PIL import Image, ImageFont, ImageDraw
-from controllers.uta_bus import UtaBusController, UtaBusStop
-from controllers.reddit import RedditImageController
-from controllers.attack import AttackHandler
-from paramiko import SSHClient
+from paramiko import SSHClient, AutoAddPolicy, SSHException
 from scp import SCPClient
+from argparse import ArgumentParser
+from os import getcwd, popen
+from time import sleep
+
+from modules.uta.uta_bus import UtaBusController, UtaBusStop
+from modules.reddit.reddit import RedditImageController
+from modules.honeypot.attack import AttackHandler
 
 class Display:
-    def __init__(self, verbose, kindle_addr, kindle_pw, bus_handler, image_handler, attack_handler, draw_image, draw_bus, draw_attacks):
+    def __init__(self, verbose, kindle_addr, kindle_pw, bus_handler, image_handler, attack_handler, draw_image, draw_bus, draw_attacks, font_file):
         self.verbose = verbose
         self.bus_handler = bus_handler
         self.image_handler = image_handler
@@ -32,11 +28,13 @@ class Display:
         self.draw_bus = draw_bus
         self.draw_attacks = draw_attacks
 
+        self.font_file = font_file
+
 
     def ssh_connect(self,):
         print("Opening ssh connection...")
         self.ssh_client = SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh_client.set_missing_host_key_policy(AutoAddPolicy())
         self.ssh_client.connect(hostname=self.kindle_addr,
                                 port=22,
                                 username="root",
@@ -44,7 +42,7 @@ class Display:
         self.scp_client = SCPClient(self.ssh_client.get_transport())
         print("Succeeded!")
 
-
+    # region Time
     def add_time(self, draw, font):
         now = dt.now()
         current_time = now.strftime("%H:%M")
@@ -52,12 +50,14 @@ class Display:
         
         date_str = now.strftime("%a, %b %d")
 
-        date_font = ImageFont.truetype("Courier_New_Bold.ttf", 42)
+        date_font = ImageFont.truetype(self.font_file, 42)
         draw.text((10, 80), date_str, (0), font=date_font)
 
         if self.verbose:
             print("Time added: {}".format(current_time))
+    #endregion
 
+    # region Bus
     def add_bus_time(self, draw, font):
         stops = self.bus_handler.get_all_times()
         
@@ -70,7 +70,9 @@ class Display:
                     draw_txt += str(stops[i].arrival_times[j])
 
             draw.text((10, 590+(50*i)), draw_txt, (0),font=font)
+    #endregion
 
+    # region Honeypot
     def add_attacks(self, draw, font):
         try:
             attacks = self.attack_handler.get_data()
@@ -124,20 +126,23 @@ class Display:
         draw.text((310, 610+(30*3)), draw_txt, (0), font=user_font)
         draw_txt = "tx_m: " + net_stats['tx_m']
         draw.text((310, 610+(30*4)), draw_txt, (0), font=user_font)
+    # endregion
 
+    # region Reddit
     def add_pixel_art(self, img):
         self.image_handler.get_image()
         pixel = Image.open('images/pixel_art.png')
         w, h = pixel.size
         w_offset = (600 - w) // 2
         img.paste(pixel, (w_offset, 145))
+    # endregion
 
     def update_image(self):
         img = Image.open("images/kindle_display_base.png")
         draw = ImageDraw.Draw(img)
-        time_font = ImageFont.truetype("Courier_New_Bold.ttf", 82)
-        bus_font = ImageFont.truetype("Courier_New_Bold.ttf", 52)
-        attack_font = ImageFont.truetype("Courier_New_Bold.ttf", 32)
+        time_font = ImageFont.truetype(self.font_file, 82)
+        bus_font = ImageFont.truetype(self.font_file, 52)
+        attack_font = ImageFont.truetype(self.font_file, 32)
         
         if self.draw_image:
             if self.verbose:
@@ -164,8 +169,8 @@ class Display:
         if self.verbose:
             print("Saved pre-crush image")
 
-        cwd = os.getcwd()
-        f = os.popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
+        cwd = getcwd()
+        f = popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
         x = f.read()
 
         if self.verbose:
@@ -177,16 +182,16 @@ class Display:
 
     def deliver_image(self, filepath):
         try:
-            self.scp_client.put(os.getcwd() + filepath, '/usr')
+            self.scp_client.put(getcwd() + filepath, '/usr')
         except Exception as e:
             print("An error occured while delivering the image. This image will be skipped.")
             print(e)
-            if(type(e) is paramiko.SSHException):
+            if(type(e) is SSHException):
                 print("Exception was an ssh exception. Reopening ssh connection!")
                 self.ssh_connect()
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument('--ip', required=True) # IP of VM
     parser.add_argument('--port', required=True) # Port of flask app
     parser.add_argument('--kip', required=True) # Kindle IP
@@ -200,7 +205,7 @@ def main():
     kindle_addr = args.kip
     kindle_pw = args.pw
 
-    d = Display(True, kindle_addr, kindle_pw, None, ric, ath, True, None, True)
+    d = Display(True, kindle_addr, kindle_pw, None, ric, ath, True, None, False, "courbd.ttf")
 
     while(True):
         print("Updating image!")
@@ -209,7 +214,7 @@ def main():
 
         if(not d.draw_bus): # If we done have to draw the bus then there is some extra time between image updates
             print("Sleeping for 3 seconds...")
-            time.sleep(3)
+            sleep(3)
 
 
 if __name__ == "__main__":

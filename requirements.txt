@@ -1,0 +1,6 @@
+datetime==4.3
+pillow==8.1.0
+paramiko==2.7.2
+scp==0.13.3
+praw==7.1.0
+argparse=1.4.0
