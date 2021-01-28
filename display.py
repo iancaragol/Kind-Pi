@@ -45,7 +45,7 @@ class Display:
     # region Time
     def add_time(self, draw, font):
         now = dt.now()
-        current_time = now.strftime("%H:%M")
+        current_time = now.strftime("%I:%M").lstrip("0").lstrip("0").replace(" 0", " ")
         draw.text((5, 5), current_time, (0),font=font)
         
         date_str = now.strftime("%a, %b %d")
