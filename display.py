@@ -189,10 +189,10 @@ class Display:
 Temperature          Air Quality
 Now: {wh['temp']}           {aq_txt[aq['overall']]} ({aq['overall']})
 Max: {wh['temp_max']}                   
-Min: {wh['temp_min']}           PM2.5: {pm2_5}
+Min: {wh['temp_min']}            PM2.5: {pm2_5}
                      PM10: {aq['pm10']}
-Wind
-{wh['wind_speed']} mph
+Wind                 CO: {aq['co']}
+{wh['wind_speed']} mph                SO2: {aq['so2']}
 
 PM2.5 levels are {pm2_5_health}
         """.strip()

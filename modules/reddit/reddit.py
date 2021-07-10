@@ -75,17 +75,20 @@ class RedditImageController:
             w_offset = (w - w_const)//2
 
         im = im.crop((w_offset, h_offset, w-w_offset, h-h_offset))
-        im.save('images/pixel_art.png')
+        im.save('images/redditimage.png')
+
+        print(f"Deleting image file to save space: {filename}")
+        os.remove(filename)
 
     def gif_to_png(self, filename):
         im = Image.open(filename)
         im.seek(0)
-        im.save('images/pixel_art.png')
+        im.save('images/redditimage.png')
         os.remove(filename)
-        return 'images/pixel_art.png'
+        return 'images/redditimage.png'
 
     def jpg_to_png(self, filename):
         im = Image.open(filename)
-        im.save('images/pixel_art.png')
+        im.save('images/redditimage.png')
         os.remove(filename)
-        return 'images/pixel_art.png'
+        return 'images/redditimage.png'

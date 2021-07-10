@@ -12,6 +12,7 @@ class WeatherHandler:
         __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         with open(os.path.join(__location__, "apikey.txt")) as ak:
             self.api_key = ak.readline()
+        self.api_key = self.api_key.strip()
         self.air_quality_uri = "http://api.openweathermap.org/data/2.5/air_pollution?lat={}&lon={}&appid={}"
         self.weather_uri =  "http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&appid={}&units=imperial"
 
@@ -23,8 +24,8 @@ class WeatherHandler:
 
         request_uri = self.air_quality_uri.format(self.lat, self.lon, self.api_key)
         response = requests.get(request_uri, headers=headers)
-        print(request_uri)
-        print(response)
+        #print(request_uri)
+        #print(response)
         data = response.json()["list"][0]
         aq = {
             "overall" : data["main"]["aqi"],
@@ -49,8 +50,8 @@ class WeatherHandler:
 
         request_uri = self.weather_uri.format(self.lat, self.lon, self.api_key)
         response = requests.get(request_uri, headers=headers)
-        print(request_uri)
-        print(response)
+        #print(request_uri)
+        #print(response)
 
         data = response.json()
         we = {
