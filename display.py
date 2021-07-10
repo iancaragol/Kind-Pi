@@ -9,12 +9,16 @@ from time import sleep
 from modules.uta.uta_bus import UtaBusController, UtaBusStop
 from modules.reddit.reddit import RedditImageController
 from modules.honeypot.attack import AttackHandler
+from modules.openweather.weatherhandler import WeatherHandler
 
 class Display:
-    def __init__(self, verbose, kindle_addr, kindle_pw, bus_handler, image_handler, attack_handler, draw_image, draw_bus, draw_attacks, font_file):
+    def __init__(self, verbose, kindle_addr, kindle_pw, bus_handler, reddit_image_handler, weather_handler, attack_handler, draw_image, draw_weather, draw_bus, draw_attacks, font_file):
         self.verbose = verbose
+
+        # Add new handlers here
         self.bus_handler = bus_handler
-        self.image_handler = image_handler
+        self.reddit_image_handler = reddit_image_handler
+        self.weather_handler = weather_handler
         self.attack_handler = attack_handler
 
         self.kindle_addr = kindle_addr
@@ -24,7 +28,9 @@ class Display:
         self.scp_client = None
         self.ssh_connect() # Connect to kindle
 
+        # Boolean to enable/disable certain handlers
         self.draw_image = draw_image
+        self.draw_weather = draw_weather
         self.draw_bus = draw_bus
         self.draw_attacks = draw_attacks
 
@@ -32,6 +38,9 @@ class Display:
 
 
     def ssh_connect(self,):
+        """
+        Creates an SSH session to the kindle.
+        """
         print("Opening ssh connection...")
         self.ssh_client = SSHClient()
         self.ssh_client.set_missing_host_key_policy(AutoAddPolicy())
@@ -44,6 +53,9 @@ class Display:
 
     # region Time
     def add_time(self, draw, font):
+        """
+        Adds the current time to the top of the image
+        """
         now = dt.now()
         current_time = now.strftime("%I:%M").lstrip("0").lstrip("0").replace(" 0", " ")
         draw.text((5, 5), current_time, (0),font=font)
@@ -59,6 +71,10 @@ class Display:
 
     # region Bus
     def add_bus_time(self, draw, font):
+        """
+        Calls bus_handler to get bus stop times.
+        Parses the result and draws it on the image.
+        """
         stops = self.bus_handler.get_all_times()
         
         for i in range(len(stops)):
@@ -74,6 +90,10 @@ class Display:
 
     # region Honeypot
     def add_attacks(self, draw, font):
+        """
+        Calls honeypot API on Azure
+        Parses the result and draws it at the bottom of the image
+        """
         try:
             attacks = self.attack_handler.get_data()
             geo_loc = self.attack_handler.get_geo_loc(attacks['last_ip'])
@@ -130,40 +150,94 @@ class Display:
 
     # region Reddit
     def add_pixel_art(self, img):
-        self.image_handler.get_image()
+        """
+        Calls reddit image handler to get a picture from reddit
+        Resizes the picture and adds it to the final image
+        """
+        self.reddit_image_handler.get_image()
         pixel = Image.open('images/pixel_art.png')
         w, h = pixel.size
         w_offset = (600 - w) // 2
         img.paste(pixel, (w_offset, 145))
     # endregion
 
+    # region Weather
+    def add_weather(self, draw):
+        """
+        Calls reddit image handler to get a picture from reddit
+        Resizes the picture and adds it to the final image
+        """
+        aq = self.weather_handler.query_air_quality_api()
+        wh = self.weather_handler.query_weather_api()
+
+        # Draw temperature and Air Quality
+        loc_font = ImageFont.truetype("courbd.ttf", 24)
+
+
+        aq_txt = ["", "Good", "Fair", "Moderate", "Poor", "Very Poor"]
+
+        # https://blissair.com/what-is-pm-2-5.htm
+        pm2_5_health = "Healthy" # Healthy
+        pm2_5 = aq['pm2_5']
+        if (pm2_5 >= 35.5): pm2_5_health = "Unhealthy"
+        if (pm2_5 >= 55.5): pm2_5_health = "Unhealthy (Limit excersise)"
+        if (pm2_5 >= 150.5): pm2_5_health = "Very Unhealthy (Don't go outside!)"
+        if (pm2_5 >= 250.5): pm2_5_health = "Hazardous (Death)"
+        
+        # Formatting looks weird but it works
+        draw_string = f"""
+Temperature          Air Quality
+Now: {wh['temp']}           {aq_txt[aq['overall']]} ({aq['overall']})
+Max: {wh['temp_max']}                   
+Min: {wh['temp_min']}           PM2.5: {pm2_5}
+                     PM10: {aq['pm10']}
+Wind
+{wh['wind_speed']} mph
+
+PM2.5 levels are {pm2_5_health}
+        """.strip()
+
+        draw.text((10, 580), draw_string, (0), font=loc_font)
+    # endregion
+
     def update_image(self):
+        """
+        Calls add_image functions to construct and crush image.
+        Once image is crushed, it is delivered to the kindle for display.
+        """
         img = Image.open("images/kindle_display_base.png")
         draw = ImageDraw.Draw(img)
         time_font = ImageFont.truetype(self.font_file, 82)
-        bus_font = ImageFont.truetype(self.font_file, 52)
-        attack_font = ImageFont.truetype(self.font_file, 32)
         
+        # Add the image add_image code for each handler here
         if self.draw_image:
             if self.verbose:
                 print("Adding pixel art")
             self.add_pixel_art(img)
 
+        if self.draw_weather:
+            if self.verbose:
+                print("Adding weather")
+            self.add_weather(draw)
+
         if self.draw_bus:
             if self.verbose:
                 print("Adding bus times")
+            bus_font = ImageFont.truetype(self.font_file, 52)
             self.add_bus_time(draw, bus_font)
 
         if self.draw_attacks:
             if self.verbose:
                 print("Adding attack info")
+            attack_font = ImageFont.truetype(self.font_file, 32)
             self.add_attacks(draw, attack_font)
 
-        # Add to image here
+        # Always add time
         if self.verbose:
             print("Adding date time")
         self.add_time(draw, time_font)
 
+        # Convert and crush image so it can be displayed by kindle
         img.convert('L')
         img.save("images/out_pre.png")
         if self.verbose:
@@ -181,6 +255,9 @@ class Display:
         print("Image delivered!")
 
     def deliver_image(self, filepath):
+        """
+        Delivers the image to /usr
+        """
         try:
             self.scp_client.put(getcwd() + filepath, '/usr')
         except Exception as e:
@@ -200,12 +277,25 @@ def main():
     args = parser.parse_args()
 
     ric = RedditImageController()
-    ath = AttackHandler("http://" + args.ip + ":" + args.port)
+    wh = WeatherHandler(lat = "40.4849769", lon = "-106.8317158") # Cords for Steamboat Springs, CO
+    # ath = AttackHandler("http://" + args.ip + ":" + args.port)
 
     kindle_addr = args.kip
     kindle_pw = args.pw
+    font_file = "courbd.ttf"
 
-    d = Display(True, kindle_addr, kindle_pw, None, ric, ath, True, None, False, "courbd.ttf")
+    d= Display(verbose=True,
+               kindle_addr=kindle_addr,
+               kindle_pw=kindle_pw,
+               bus_handler=None,
+               reddit_image_handler=ric,
+               weather_handler=wh,
+               attack_handler=None,
+               draw_image=True,
+               draw_weather=True,
+               draw_bus=False,
+               draw_attacks=False,
+               font_file=font_file)
 
     while(True):
         print("Updating image!")

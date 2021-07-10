@@ -5,7 +5,7 @@ mount -o rw,remount /
 
 Steps for starting kindle scripts:
 
-1. ssh into kindle (user: root)
+1. ssh into kindle (user: root, pw: fionac28)
 2. navigate to /usr
 3. mount -o rw,remount /
 4. tmux
