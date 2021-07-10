@@ -185,18 +185,17 @@ class Display:
         if (pm2_5 >= 250.5): pm2_5_health = "Hazardous (Death)"
         
         # Formatting looks weird but it works
-        draw_string = f"""
-Temperature          Air Quality
-Now: {wh['temp']}           {aq_txt[aq['overall']]} ({aq['overall']})
-Max: {wh['temp_max']}                   
-Min: {wh['temp_min']}            PM2.5: {pm2_5}
-                     PM10: {aq['pm10']}
-Wind                 CO: {aq['co']}
-{wh['wind_speed']} mph                SO2: {aq['so2']}
+        # The math makes sure that the spacing is correct no matter the temperature or wind speed
+        line1 = "Temperature          Air Quality\n"
+        line2 = f"Now: {wh['temp']}" + (" "*(12+(4-len(str(wh['temp']))))) + f"{aq_txt[aq['overall']]} ({aq['overall']})\n"
+        line3 = f"Max: {wh['temp_max']}\n"
+        line4 = f"Min: {wh['temp_min']}" + (" "*(12+(4-len(str(wh['temp_min']))))) + f"PM2.5: {aq['pm2_5']}\n"
+        line5 = (" "*21) + f"PM10: {aq['pm10']}\n"
+        line6 = f"Wind" + (" "*17) + f"CO: {aq['co']}\n"
+        line7 = f"{wh['wind_speed']} mph" + (" "*(13+(4-len(str(wh['wind_speed']))))) + f"SO2: {aq['so2']}\n"
+        line8 = f"\nPM2.5 levels are {pm2_5_health}"
 
-PM2.5 levels are {pm2_5_health}
-        """.strip()
-
+        draw_string = line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8
         draw.text((10, 580), draw_string, (0), font=loc_font)
     # endregion
 

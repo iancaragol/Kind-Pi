@@ -55,11 +55,11 @@ class WeatherHandler:
 
         data = response.json()
         we = {
-            "temp" : data["main"]["temp"],
-            "temp_max" : data["main"]["temp_max"],
-            "temp_min" : data["main"]["temp_min"],
-            "wind_speed" : data["wind"]["speed"],
-            "description" : data["weather"][0]["main"],
+            "temp" : round(data["main"]["temp"], 2),
+            "temp_max" : round(data["main"]["temp_max"], 2),
+            "temp_min" : round(data["main"]["temp_min"], 2),
+            "wind_speed" : round(data["wind"]["speed"], 2),
+            "description" : data["weather"][0]["main"]
         }
 
         return we
