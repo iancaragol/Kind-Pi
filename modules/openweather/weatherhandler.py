@@ -1,6 +1,6 @@
 import requests
 import os
-from datetime import datetime as dt
+from datetime import date, datetime as dt
 from PIL import Image
 
 class WeatherHandler:
@@ -17,7 +17,14 @@ class WeatherHandler:
 
     def query_air_quality_api(self):
         # https://openweathermap.org/api/air-pollution
-        response = requests.get(self.air_quality_uri.format(self.lat, self.lon, self.api_key))
+        headers = {
+            'Content-type': 'application/json',
+        }
+
+        request_uri = self.air_quality_uri.format(self.lat, self.lon, self.api_key)
+        response = requests.get(request_uri, headers=headers)
+        print(request_uri)
+        print(response)
         data = response.json()["list"][0]
         aq = {
             "overall" : data["main"]["aqi"],
@@ -36,7 +43,15 @@ class WeatherHandler:
     
     def query_weather_api(self):
         # https://openweathermap.org/api/air-pollution
-        response = requests.get(self.weather_uri.format(self.lat, self.lon, self.api_key))
+        headers = {
+            'Content-type': 'application/json',
+        }
+
+        request_uri = self.weather_uri.format(self.lat, self.lon, self.api_key)
+        response = requests.get(request_uri, headers=headers)
+        print(request_uri)
+        print(response)
+
         data = response.json()
         we = {
             "temp" : data["main"]["temp"],
