@@ -1,18 +1,13 @@
 import requests
-import os
-from datetime import date, datetime as dt
-from PIL import Image
+from os import environ
+from datetime import datetime
 
 class WeatherHandler:
     # https://api.nasa.gov/
     def __init__(self, lat, lon):
         self.lat = lat
         self.lon = lon
-        self.api_key = ""
-        __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        with open(os.path.join(__location__, "apikey.txt")) as ak:
-            self.api_key = ak.readline()
-        self.api_key = self.api_key.strip()
+        self.api_key = environ.get("OPENWEATHER_API_KEY")
         self.air_quality_uri = "http://api.openweathermap.org/data/2.5/air_pollution?lat={}&lon={}&appid={}"
         self.weather_uri =  "http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&appid={}&units=imperial"
 
@@ -51,8 +46,8 @@ class WeatherHandler:
             aq["nh3"] = data["components"]["nh3"]
 
         except Exception as e:
-            print("An exception occurred in query_air_quality_api")
-            print("Returning default values.")
+            print("[-] An exception occurred in query_air_quality_api")
+            print("[-] Returning default values.")
             print(e)
 
         return aq
@@ -86,8 +81,8 @@ class WeatherHandler:
             we["description"] = data["weather"][0]["main"]
                     
         except Exception as e:
-            print("An exception occurred in query_air_quality_api")
-            print("Returning default values.")
+            print("[-] An exception occurred in query_air_quality_api")
+            print("[-] Returning default values.")
             print(e)
 
         return we

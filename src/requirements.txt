@@ -1,6 +1,7 @@
 datetime==4.3
-pillow==8.1.0
+pillow>=9.0.0
 paramiko==2.7.2
 scp==0.13.3
-praw==7.1.0
-argparse=1.4.0
+praw>=7.5.0
+pandas==1.4.0
+beautifulsoup4==4.10.0

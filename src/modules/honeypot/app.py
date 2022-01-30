@@ -20,7 +20,7 @@ try:
     with open('user_count.json') as f:
         user_count = json.load(f)
 except Exception as e:
-    print("Failed to load user_count.json")
+    print("[-] Failed to load user_count.json")
     print(e)
     user_count = {}
 
@@ -28,7 +28,7 @@ try:
     with open('ip_users.json') as f:
         ip_users = json.load(f)
 except Exception as e:
-    print("Failed to load ip_users.json")
+    print("[-] Failed to load ip_users.json")
     print(e)
     ip_users = {}
 
@@ -66,7 +66,7 @@ def get_traffic():
 def update_network():
     # Daily
     try:
-        print("Trying to check daily netstat output")
+        print("[-] Trying to check daily netstat output")
 
         global rx_d
         global tx_d
@@ -80,9 +80,9 @@ def update_network():
         rx_d = stats[1] + " " + stats[2]
         tx_d = stats[4] + " " + stats[5]
 
-        print("Done!")
+        print("[-] Done!")
 
-        print("Trying to check monthly netstat output")
+        print("[-] Trying to check monthly netstat output")
         netstat = check_output(["vnstat", "-m", "-i", net_interface]).decode("utf-8")
         splits = netstat.split('\n')
 
@@ -91,16 +91,16 @@ def update_network():
         rx_m = stats[2] + " " + stats[3]
         tx_m = stats[5] + " " + stats[6]
 
-        print("Done!")
+        print("[-] Done!")
 
     except Exception as e:
-        print("An exception occured when updating the network...")
+        print("[-] An exception occured when updating the network...")
         print(e)
 
 @bg.scheduled_job('interval', minutes=1)
 def update_logs():
     timeout = time.time() + 59
-    print("Opening log file...")
+    print("[-] Opening log file...")
     #Set the filename and open the file
     f = open(filename,'r')
 
@@ -125,7 +125,7 @@ def update_logs():
             try:
                 # print(line)
                 if("Failed password" in line):
-                    print("Invalid login attempt discovered!")
+                    print("[-] Invalid login attempt discovered!")
                     user = "none"
                     ip = "0.0.0.0.0"
 
@@ -160,12 +160,12 @@ def update_logs():
             except Exception as e:
                 print(e)
 
-    print("Saving json's")
+    print("[-] Saving json's")
     with open('user_count.json', 'w', encoding='utf-8') as f:
         json.dump(user_count, f, ensure_ascii=False, indent=4)
     with open('ip_users.json', 'w', encoding='utf-8') as f:
         json.dump(ip_users, f, ensure_ascii=False, indent=4)
-    print("Done!")
+    print("[-] Done!")
 
 
 if __name__ == "__main__":

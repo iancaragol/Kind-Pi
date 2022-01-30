@@ -7,12 +7,13 @@ class RedditImageController:
     def __init__(self):
         self.last_image_url = ""
         self.image_changed = True
+        self.subreddit = os.environ.get("IMG_SUBREDDIT")
 
     def get_image(self):
         try:
-            print("Getting images from /r/illustration")
-            reddit = praw.Reddit('Kindle', user_agent='kindle user')
-            subreddit = reddit.subreddit('illustration')  
+            print(f"[-] Getting images from /r/{self.subreddit}")
+            reddit = praw.Reddit('KindPi', user_agent='kindle user')
+            subreddit = reddit.subreddit(self.subreddit)  
 
             top_posts = subreddit.top('hour')     
             for submission in top_posts:
@@ -21,17 +22,17 @@ class RedditImageController:
                         self.download_image(submission.url, 'images/' + str(submission.url).rsplit('/', 1)[1])
                         break
         except Exception as e:
-            print("An exception occurred while getting images...")
+            print("[-] An exception occurred while getting images...")
             print(e)
 
     def download_image(self, image_url, filename):
         if image_url == self.last_image_url:
             self.image_changed = False
-            print("Skipping download because image has not changed...")
+            print("[-] Skipping download because image has not changed...")
             return
 
         try:
-            print("Downloading image from reddit...")
+            print("[-] Downloading image from reddit...")
             response = requests.get(image_url)
 
             if response.status_code == 200:
@@ -52,7 +53,7 @@ class RedditImageController:
             self.image_changed = True
             
         except Exception as e:
-            print("An exception occurred while downloading...")
+            print("[-] An exception occurred while downloading...")
             print(e)
 
     def crop_image_and_save(self, filename):
@@ -77,7 +78,7 @@ class RedditImageController:
         im = im.crop((w_offset, h_offset, w-w_offset, h-h_offset))
         im.save('images/redditimage.png')
 
-        print(f"Deleting image file to save space: {filename}")
+        print(f"[-] Deleting image file to save space: {filename}")
         os.remove(filename)
 
     def gif_to_png(self, filename):

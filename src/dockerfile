@@ -1,3 +1,10 @@
+FROM python:3.9.4-slim as build
+
+WORKDIR /wheels
+
+COPY requirements.txt /opt/displayer/requirements.txt
+RUN pip3 wheel -r /opt/displayer/requirements.txt
+
 # Main docker image to be built
 FROM python:3.9.4-slim
 
@@ -11,6 +18,20 @@ RUN pip3 install -r requirements.txt -f /wheels \
   && rm -rf /wheels \
   && rm -rf /root/.cache/pip/* \
   && rm requirements.txt
+
+# Setup font(s)
+RUN apt-get update
+RUN apt-get -y install fontconfig
+RUN apt-get install -y pngcrush
+COPY ./fonts/courbd.ttf /opt/displayer/courbd.ttf
+RUN mkdir -p /usr/share/fonts/courbd/
+RUN install -m644 /opt/displayer/courbd.ttf /usr/share/fonts/courbd/
+RUN rm /opt/displayer/courbd.ttf
+RUN fc-cache -f -v
+
+# Configure TimeZone
+# https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER nonroot
 

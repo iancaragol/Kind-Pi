@@ -28,7 +28,7 @@ class MarsRover:
 
     def download_image(self, image_url):
         try:
-            print("Downloading image from Nasa...")
+            print("[-] Downloading image from Nasa...")
             response = requests.get(image_url)
 
             if response.status_code == 200:
@@ -41,7 +41,7 @@ class MarsRover:
             self.crop_image_and_save()
             
         except Exception as e:
-            print("An exception occurred while downloading...")
+            print("[-] An exception occurred while downloading...")
             print(e)
 
     def crop_image_and_save(self):
@@ -74,7 +74,7 @@ class MarsRover:
             return response.json()
         else:
             print(f"Got status code: {response.status_code} from {self.manifest_uri.format(self.rover)}")
-            print("Returning none.")
+            print("[-] Returning none.")
             return None
 
 

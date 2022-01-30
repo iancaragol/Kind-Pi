@@ -2,14 +2,12 @@ version: '3.9'
 
 services:
   # Backend Service
-  backend:
-    container_name: backend
+  displayer:
+    container_name: displayer
     env_file: 
       - ./config.env
     restart: always
     build: ./src/
-    ports:
-      - "5000:5000"
     volumes:
       - ./src/:/home/app/
-    command: setup.py -s backend
+    command: display.py

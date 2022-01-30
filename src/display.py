@@ -1,10 +1,13 @@
 from datetime import datetime as dt
+from pydoc import ErrorDuringImport
+from webbrowser import get
 from PIL import Image, ImageFont, ImageDraw
 from paramiko import SSHClient, AutoAddPolicy, SSHException
 from scp import SCPClient
 from argparse import ArgumentParser
-from os import getcwd, popen
+from os import getcwd, environ
 from time import sleep
+import subprocess
 
 from modules.uta.uta_bus import UtaBusController, UtaBusStop
 from modules.reddit.reddit import RedditImageController
@@ -41,7 +44,7 @@ class Display:
         """
         Creates an SSH session to the kindle.
         """
-        print("Opening ssh connection...")
+        print("[-] Opening ssh connection...")
         self.ssh_client = SSHClient()
         self.ssh_client.set_missing_host_key_policy(AutoAddPolicy())
         self.ssh_client.connect(hostname=self.kindle_addr,
@@ -49,7 +52,7 @@ class Display:
                                 username="root",
                                 password=self.kindle_pw)
         self.scp_client = SCPClient(self.ssh_client.get_transport())
-        print("Succeeded!")
+        print("[-] Succeeded!")
 
     # region Time
     def add_time(self, draw, font):
@@ -66,7 +69,7 @@ class Display:
         draw.text((10, 80), date_str, (0), font=date_font)
 
         if self.verbose:
-            print("Time added: {}".format(current_time))
+            print("[-] Time added: {}".format(current_time))
     #endregion
 
     # region Bus
@@ -100,7 +103,7 @@ class Display:
             net_stats = self.attack_handler.get_net_stats()
         except Exception as e:
             # Dirty error handling ;p
-            print("An error occurred while getting network and attack data.")
+            print("[-] An error occurred while getting network and attack data.")
             print(e)
 
             template = "Exception: {0}"
@@ -149,13 +152,13 @@ class Display:
     # endregion
 
     # region Reddit
-    def add_pixel_art(self, img):
+    def add_reddit_image(self, img):
         """
         Calls reddit image handler to get a picture from reddit
         Resizes the picture and adds it to the final image
         """
         self.reddit_image_handler.get_image()
-        pixel = Image.open('images/pixel_art.png')
+        pixel = Image.open('images/redditimage.png')
         w, h = pixel.size
         w_offset = (600 - w) // 2
         img.paste(pixel, (w_offset, 145))
@@ -211,47 +214,49 @@ class Display:
         # Add the image add_image code for each handler here
         if self.draw_image:
             if self.verbose:
-                print("Adding pixel art")
-            self.add_pixel_art(img)
+                print("[-] Adding pixel art")
+            self.add_reddit_image(img)
 
         if self.draw_weather:
             if self.verbose:
-                print("Adding weather")
+                print("[-] Adding weather")
             self.add_weather(draw)
 
         if self.draw_bus:
             if self.verbose:
-                print("Adding bus times")
+                print("[-] Adding bus times")
             bus_font = ImageFont.truetype(self.font_file, 52)
             self.add_bus_time(draw, bus_font)
 
         if self.draw_attacks:
             if self.verbose:
-                print("Adding attack info")
+                print("[-] Adding attack info")
             attack_font = ImageFont.truetype(self.font_file, 32)
             self.add_attacks(draw, attack_font)
 
         # Always add time
         if self.verbose:
-            print("Adding date time")
+            print("[-] Adding date time")
         self.add_time(draw, time_font)
 
         # Convert and crush image so it can be displayed by kindle
         img.convert('L')
         img.save("images/out_pre.png")
         if self.verbose:
-            print("Saved pre-crush image")
+            print("[-] Saved pre-crush image")
 
         cwd = getcwd()
-        f = popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
-        x = f.read()
+        p = subprocess.Popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd).split(),
+                     stdout=subprocess.PIPE)
+        x, _ = p.communicate()
 
         if self.verbose:
-            print("Crushed image")
             print(x)
-        print("Delivering image to kindle...")
+
+        print("[-] Crushed image")
+        print("[-] Delivering image to kindle...")
         self.deliver_image("/images/out.png")
-        print("Image delivered!")
+        print("[-] Image delivered!")
 
     def deliver_image(self, filepath):
         """
@@ -260,32 +265,32 @@ class Display:
         try:
             self.scp_client.put(getcwd() + filepath, '/usr')
         except Exception as e:
-            print("An error occured while delivering the image. This image will be skipped.")
+            print("[-] An error occured while delivering the image. This image will be skipped.")
             print(e)
             if(type(e) is SSHException):
-                print("Exception was an ssh exception. Reopening ssh connection!")
+                print("[-] Exception was an ssh exception. Reopening ssh connection!")
                 self.ssh_connect()
 
 def main():
-    parser = ArgumentParser()
-    parser.add_argument('--ip', required=True) # IP of VM
-    parser.add_argument('--port', required=True) # Port of flask app
-    parser.add_argument('--kip', required=True) # Kindle IP
-    parser.add_argument('--pw', required=True) # Kindle root PW
+    print("[!] Starting up...")
 
-    args = parser.parse_args()
+    KINDLE_IP = environ.get("KINDLE_IP")
+    KINDLE_PW = environ.get("KINDLE_PW")
+    WEATHER_LAT = environ.get("WEATHER_LAT")
+    WEATHER_LON = environ.get("WEATHER_LON")
+    VERBOSE = bool(environ.get("VERBOSE"))
 
+    print("[!] Initializing RedditImageController ...")
     ric = RedditImageController()
-    wh = WeatherHandler(lat = "40.4849769", lon = "-106.8317158") # Cords for Steamboat Springs, CO
-    # ath = AttackHandler("http://" + args.ip + ":" + args.port)
 
-    kindle_addr = args.kip
-    kindle_pw = args.pw
+    print("[!] Initializing WeatherHandler ...")
+    wh = WeatherHandler(lat = WEATHER_LAT, lon = WEATHER_LON)
     font_file = "courbd.ttf"
 
-    d= Display(verbose=True,
-               kindle_addr=kindle_addr,
-               kindle_pw=kindle_pw,
+    print("[!] Initializing Display ...")
+    d= Display(verbose=VERBOSE,
+               kindle_addr=KINDLE_IP,
+               kindle_pw=KINDLE_PW,
                bus_handler=None,
                reddit_image_handler=ric,
                weather_handler=wh,
@@ -296,15 +301,11 @@ def main():
                draw_attacks=False,
                font_file=font_file)
 
+    print("[!] Everything was initialized")
     while(True):
-        print("Updating image!")
+        print("[!] Updating image\n")
         d.update_image()
-        print("Image updated!")
-
-        if(not d.draw_bus): # If we done have to draw the bus then there is some extra time between image updates
-            print("Sleeping for 3 seconds...")
-            sleep(3)
-
+        print("[!] Image updated!\n")
 
 if __name__ == "__main__":
     main()

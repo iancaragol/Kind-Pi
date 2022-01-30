@@ -25,7 +25,7 @@ class UtaBusStop:
         # 2003,,2,200 SOUTH,,3,https://www.rideuta.com/Rider-Tools/Schedules-and-Maps/2-200-South,2eb566,FFFFFF
         service_ids = [4, 3, 2] # Hardcoded for UTA
 
-        print("Parsing gtfs files...")
+        print("[-] Parsing gtfs files...")
 
         for s_id in service_ids:
             trip_df = pd.read_csv(os.getcwd() + "/controllers/gtfs/trips.txt")
@@ -43,7 +43,7 @@ class UtaBusStop:
 
             self.scheduled_times[s_id] = str_times
 
-        print("Complete!")
+        print("[-] Complete!")
 
 class UtaBusController:
     def __init__(self):
@@ -81,7 +81,7 @@ class UtaBusController:
         except:
             bus_stop.estimated_times = []
 
-        print("Stop: " + str(bus_stop.stop_id) + " , times: " + str(times))
+        print("[-] Stop: " + str(bus_stop.stop_id) + " , times: " + str(times))
 
         return bus_stop
 
