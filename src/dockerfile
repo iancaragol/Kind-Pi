@@ -19,10 +19,11 @@ RUN pip3 install -r requirements.txt -f /wheels \
   && rm -rf /root/.cache/pip/* \
   && rm requirements.txt
 
-# Setup font(s)
 RUN apt-get update
-RUN apt-get -y install fontconfig
 RUN apt-get install -y pngcrush
+
+# Setup font(s)
+RUN apt-get -y install fontconfig
 COPY ./fonts/courbd.ttf /opt/displayer/courbd.ttf
 RUN mkdir -p /usr/share/fonts/courbd/
 RUN install -m644 /opt/displayer/courbd.ttf /usr/share/fonts/courbd/

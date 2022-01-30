@@ -1,0 +1,13 @@
+VERBOSE=0
+
+KINDLE_IP=10.0.0.1
+KINDLE_PW=supersecurepw
+
+TZ=America/Denver
+
+WEATHER_LAT="100"
+WEATHER_LON="-100"
+
+OPENWEATHER_API_KEY=abcdefg
+
+IMG_SUBREDDIT=illustration

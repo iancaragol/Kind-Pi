@@ -1,11 +1,10 @@
 from datetime import datetime as dt
-from pydoc import ErrorDuringImport
-from webbrowser import get
 from PIL import Image, ImageFont, ImageDraw
 from paramiko import SSHClient, AutoAddPolicy, SSHException
 from scp import SCPClient
 from argparse import ArgumentParser
-from os import getcwd, environ
+from os import environ, getcwd, system
+import os
 from time import sleep
 import subprocess
 
@@ -158,7 +157,7 @@ class Display:
         Resizes the picture and adds it to the final image
         """
         self.reddit_image_handler.get_image()
-        pixel = Image.open('images/redditimage.png')
+        pixel = Image.open('images/reddit_image.png')
         w, h = pixel.size
         w_offset = (600 - w) // 2
         img.paste(pixel, (w_offset, 145))
@@ -214,7 +213,7 @@ class Display:
         # Add the image add_image code for each handler here
         if self.draw_image:
             if self.verbose:
-                print("[-] Adding pixel art")
+                print("[-] Adding reddit image")
             self.add_reddit_image(img)
 
         if self.draw_weather:
@@ -245,18 +244,19 @@ class Display:
         if self.verbose:
             print("[-] Saved pre-crush image")
 
+    def compress_image(self):
+        """
+        Compresses the image with pngcrush
+        """
         cwd = getcwd()
-        p = subprocess.Popen("pngcrush {}/images/out_pre.png {}/images/out.png".format(cwd, cwd).split(),
-                     stdout=subprocess.PIPE)
-        x, _ = p.communicate()
 
-        if self.verbose:
-            print(x)
+        print("[-] Running pngcrush on out_pre.png")
+
+        #system("pngcrush -q -reduce{}/images/out_pre.png {}/images/out.png".format(cwd, cwd))
+        p = subprocess.Popen(f"pngcrush -q {cwd}/images/out_pre.png {cwd}/images/out.png".split(), stdout=subprocess.DEVNULL)
+        p.wait()
 
         print("[-] Crushed image")
-        print("[-] Delivering image to kindle...")
-        self.deliver_image("/images/out.png")
-        print("[-] Image delivered!")
 
     def deliver_image(self, filepath):
         """
@@ -272,23 +272,19 @@ class Display:
                 self.ssh_connect()
 
 def main():
-    print("[!] Starting up...")
-
+    VERBOSE = bool(environ.get("VERBOSE"))
     KINDLE_IP = environ.get("KINDLE_IP")
     KINDLE_PW = environ.get("KINDLE_PW")
     WEATHER_LAT = environ.get("WEATHER_LAT")
     WEATHER_LON = environ.get("WEATHER_LON")
-    VERBOSE = bool(environ.get("VERBOSE"))
 
-    print("[!] Initializing RedditImageController ...")
     ric = RedditImageController()
+    wh = WeatherHandler(lat = WEATHER_LAT, lon = WEATHER_LON) # Cords for Steamboat Springs, CO
+    # ath = AttackHandler("http://" + args.ip + ":" + args.port)
 
-    print("[!] Initializing WeatherHandler ...")
-    wh = WeatherHandler(lat = WEATHER_LAT, lon = WEATHER_LON)
     font_file = "courbd.ttf"
 
-    print("[!] Initializing Display ...")
-    d= Display(verbose=VERBOSE,
+    d = Display(verbose=VERBOSE,
                kindle_addr=KINDLE_IP,
                kindle_pw=KINDLE_PW,
                bus_handler=None,
@@ -301,11 +297,22 @@ def main():
                draw_attacks=False,
                font_file=font_file)
 
-    print("[!] Everything was initialized")
     while(True):
-        print("[!] Updating image\n")
+        print("[-] Starting image update process...", flush=True)
+
         d.update_image()
-        print("[!] Image updated!\n")
+        print("[-] Image updated!", flush=True)
+
+        d.compress_image()
+        print("[-] Image compressed!", flush=True)
+        
+        print("[-] Delivering image to kindle...", flush=True)
+        d.deliver_image("/images/out.png")
+        print("[-] Image delivered!", flush=True)
+
+        print("[!] Sleeping....", flush=True)
+        sleep(10)
+
 
 if __name__ == "__main__":
     main()

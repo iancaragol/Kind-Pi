@@ -8,55 +8,57 @@ class RedditImageController:
         self.last_image_url = ""
         self.image_changed = True
         self.subreddit = os.environ.get("IMG_SUBREDDIT")
+        self.image_filepath = "images/reddit_image.png"
 
     def get_image(self):
         try:
-            print(f"[-] Getting images from /r/{self.subreddit}")
+            print(f"[-] Getting images from /r/{self.subreddit}", flush=True)
             reddit = praw.Reddit('KindPi', user_agent='kindle user')
             subreddit = reddit.subreddit(self.subreddit)  
 
-            top_posts = subreddit.top('hour')     
+            top_posts = subreddit.top('day')     
             for submission in top_posts:
                 if not submission.stickied:
                     if 'http://i.imgur.com/' in submission.url or 'i.redd.it/' in submission.url:
                         self.download_image(submission.url, 'images/' + str(submission.url).rsplit('/', 1)[1])
                         break
         except Exception as e:
-            print("[-] An exception occurred while getting images...")
+            print("[-] An exception occurred while getting images...", flush=True)
             print(e)
 
-    def download_image(self, image_url, filename):
+    def download_image(self, image_url, temp_img):
+        print(f"[-] Image URL: {image_url}")
+        print(f"[-] LAST Image URL: {self.last_image_url}")
         if image_url == self.last_image_url:
-            self.image_changed = False
-            print("[-] Skipping download because image has not changed...")
+            print("[-] Skipping download because image has not changed...", flush=True)
             return
 
         try:
-            print("[-] Downloading image from reddit...")
+            print("[-] Downloading image from reddit...", flush=True)
             response = requests.get(image_url)
 
             if response.status_code == 200:
-                print('Downloading %s...' % (filename))
+                print('Downloading %s...' % (temp_img))
 
-            with open(filename, 'wb') as fo:
+            with open(temp_img, 'wb') as fo:
                 for chunk in response.iter_content(4096):
                     fo.write(chunk)
             
-            if filename.endswith('.gif'):
-                filename = self.gif_to_png(filename)
+            if temp_img.endswith('.gif'):
+                temp_img = self.gif_to_png(temp_img)
             
-            elif filename.endswith('.jpg'):
-                filename = self.jpg_to_png(filename)
+            elif temp_img.endswith('.jpg'):
+                temp_img = self.jpg_to_png(temp_img)
                 
-            self.crop_image_and_save(filename)
+            self.crop_image_and_save(temp_img)
             self.last_image_url = image_url
-            self.image_changed = True
             
         except Exception as e:
-            print("[-] An exception occurred while downloading...")
+            print("[-] An exception occurred while downloading...", flush=True)
             print(e)
 
     def crop_image_and_save(self, filename):
+        print(f"[-] Cropping temporary image: {filename}", flush=True)
         basewidth = 550
         im = Image.open(filename)
         wpercent = (basewidth/float(im.size[0]))
@@ -76,20 +78,21 @@ class RedditImageController:
             w_offset = (w - w_const)//2
 
         im = im.crop((w_offset, h_offset, w-w_offset, h-h_offset))
-        im.save('images/redditimage.png')
+        print(f"[-] Saving cropped image to {self.image_filepath}", flush=True)
+        im.save(self.image_filepath)
 
-        print(f"[-] Deleting image file to save space: {filename}")
+        print(f"[-] Deleting temporary image file to save space: {filename}", flush=True)
         os.remove(filename)
 
     def gif_to_png(self, filename):
         im = Image.open(filename)
         im.seek(0)
-        im.save('images/redditimage.png')
+        im.save(f"{filename}.png")
         os.remove(filename)
-        return 'images/redditimage.png'
+        return f"{filename}.png"
 
     def jpg_to_png(self, filename):
         im = Image.open(filename)
-        im.save('images/redditimage.png')
+        im.save(f"{filename}.png")
         os.remove(filename)
-        return 'images/redditimage.png'
+        return f"{filename}.png"
