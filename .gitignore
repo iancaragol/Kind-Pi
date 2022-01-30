@@ -1,3 +1,4 @@
 praw.ini
 credentials.txt
 apikey.txt
+*.env
