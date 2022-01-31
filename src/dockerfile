@@ -2,8 +2,10 @@ FROM python:3.9.4-slim as build
 
 WORKDIR /wheels
 
+# Literally just install everything
 RUN apt update && apt install curl -y && apt install gnupg -y
 RUN apt install gcc -y && apt install g++ -y
+RUN apk --update --upgrade add gcc musl-dev jpeg-dev zlib-dev libffi-dev cairo-dev pango-dev gdk-pixbuf-dev
 
 COPY requirements.txt /opt/displayer/requirements.txt
 RUN pip3 wheel -r /opt/displayer/requirements.txt
