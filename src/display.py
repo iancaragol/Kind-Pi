@@ -8,9 +8,9 @@ import os
 from time import sleep
 import subprocess
 
-from modules.uta.uta_bus import UtaBusController, UtaBusStop
+#from modules.uta.uta_bus import UtaBusController, UtaBusStop
 from modules.reddit.reddit import RedditImageController
-from modules.honeypot.attack import AttackHandler
+#from modules.honeypot.attack import AttackHandler
 from modules.openweather.weatherhandler import WeatherHandler
 
 class Display:
