@@ -2,6 +2,13 @@ FROM python:3.9.4-slim as build
 
 WORKDIR /wheels
 
+RUN apt update && apt install curl -y && apt install gnupg -y
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list
+RUN apt update && ACCEPT_EULA=Y apt install msodbcsql17 -y
+RUN apt install gcc -y && apt install g++ -y
+RUN apt -y install unixodbc-dev
+
 COPY requirements.txt /opt/displayer/requirements.txt
 RUN pip3 wheel -r /opt/displayer/requirements.txt
 
