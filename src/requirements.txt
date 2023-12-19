@@ -1,6 +1,6 @@
 datetime==4.3
 pillow>=9.0.0
-paramiko==2.10.1
+paramiko==3.4.0
 scp==0.13.3
 praw>=7.5.0
 beautifulsoup4==4.10.0
